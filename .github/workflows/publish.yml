@@ -1,0 +1,51 @@
+name: Publish Afterword story
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/publish.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore the approved static story
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://afterword-story-restored.nn6f6gxmbx.chatgpt.site"
+          curl --fail --location --retry 3 "$BASE/" --output index.html
+          cp index.html 404.html
+          touch .nojekyll
+
+          files=(
+            "assets/index-B7cd95nm.css"
+            "assets/index-Bi4RTXFE.js"
+            "assets/story-of-your-life/memory-01-2007.webp"
+            "assets/story-of-your-life/memory-02-2015.webp"
+            "assets/story-of-your-life/memory-03-2022.webp"
+            "assets/story-of-your-life/memory-04-2023-08.webp"
+            "assets/story-of-your-life/memory-05-2024-01.webp"
+            "assets/story-of-your-life/memory-06-2025-04.webp"
+            "assets/story-of-your-life/memory-07-2026-01.webp"
+          )
+
+          for file in "${files[@]}"; do
+            mkdir -p "$(dirname "$file")"
+            curl --fail --location --retry 3 "$BASE/$file" --output "$file"
+          done
+
+      - name: Commit the published site
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html 404.html .nojekyll assets
+          git diff --cached --quiet && exit 0
+          git commit -m "Publish restored Afterword story"
+          git push
